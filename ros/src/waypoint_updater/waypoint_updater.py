@@ -42,10 +42,31 @@ class WaypointUpdater(object):
 
     def pose_cb(self, msg):
         # TODO: Implement
+        rospy.loginfo('pose_cb - x:%s y:%s z:%s', msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
+
+        index = 0
+        shortest_index = 0
+        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+        shortest_distance = dl(msg.pose.position, self.waypoints.waypoints[index].pose.pose.position)
+        for wp in self.waypoints.waypoints:
+            distance = dl(msg.pose.position, wp.pose.pose.position)
+            if distance < shortest_distance:
+                shortest_distance = distance
+                shortest_index = index
+            index = index+1
+        rospy.loginfo('shortest_distance = %s index = %s', distance, shortest_index)
+        waypoints = []
+        for i in range(LOOKAHEAD_WPS):
+            waypoints.append( self.waypoints.waypoints[i+shortest_index])
+        self.final_waypoints_pub.publish(waypoints)
         pass
 
     def waypoints_cb(self, waypoints):
+        for i in range(5):
+            position = waypoints.waypoints[i].pose.pose.position
+            rospy.loginfo('waypoints_cb - x:%s y:%s z:%s', position.x, position.y, position.z)
         # TODO: Implement
+        self.waypoints = waypoints
         pass
 
     def traffic_cb(self, msg):
