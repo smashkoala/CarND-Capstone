@@ -25,6 +25,7 @@ LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this n
 
 
 class WaypointUpdater(object):
+
     def __init__(self):
         rospy.init_node('waypoint_updater')
 
@@ -33,11 +34,10 @@ class WaypointUpdater(object):
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
-
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
-
+        self.waypoints = Lane()
         rospy.spin()
 
     def pose_cb(self, msg):
@@ -56,9 +56,18 @@ class WaypointUpdater(object):
             index = index+1
         rospy.loginfo('shortest_distance = %s index = %s', distance, shortest_index)
         waypoints = []
+        speed = 0
+        wp2 = self.waypoints.waypoints[shortest_index]
+        rospy.loginfo('closest waypoint linear vel x:%s y:%s z:%s', wp2.twist.twist.linear.x, wp2.twist.twist.linear.y, wp2.twist.twist.linear.z )
         for i in range(LOOKAHEAD_WPS):
-            waypoints.append( self.waypoints.waypoints[i+shortest_index])
-        self.final_waypoints_pub.publish(waypoints)
+            self.waypoints.waypoints[i+shortest_index].twist.twist.linear.x = speed
+            waypoints.append(self.waypoints.waypoints[i+shortest_index])
+            speed = speed + 0.5
+        lane = Lane()
+        lane.header.frame_id = '/world'
+        lane.header.stamp = rospy.Time(0)
+        lane.waypoints = waypoints
+        self.final_waypoints_pub.publish(lane)
         pass
 
     def waypoints_cb(self, waypoints):
